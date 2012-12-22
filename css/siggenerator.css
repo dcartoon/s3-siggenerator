@@ -1,0 +1,24 @@
+body {
+    color: #333;
+    background-color: #EEE;
+}
+#content {
+    width: 80%;
+    margin: 10px auto 0px auto;
+}
+
+.box {
+    border: 1px #000 dashed;
+    padding: 10px;
+    margin-bottom: 20px;
+}
+
+.inputHolder {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+#inputErrorHolder {
+    color: #FF0000;
+    font-style: italic;
+}

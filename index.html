@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>S3 Signature Generator</title>
+    <link rel="stylesheet" type="text/css" href="css/normalize.css"/>
+    <link rel="stylesheet" type="text/css" href="css/siggenerator.css"/>
+</head>
+<body>
+    <div id="content">
+        <h1>S3 Signature Generator</h1>
+        <hr/>
+        <p>
+            This is a tool to help you generate one-off signed Amazon S3 urls.
+            For more information about the S3 Signature protocol see Amazon's
+            <a href="http://s3.amazonaws.com/doc/s3-developer-guide/RESTAuthentication.html">Developer Guide</a>.
+            This is useful if you want to store files in a private S3 bucket
+            but still allow access to individuals without having to provide credentials
+            or alter access control lists.
+        </p>
+        <p style="font-style:italic;">
+            The signature generation process requires your AWS Credentials.  It is a best practice
+            to not put your key into random forms on the Internet.  Therefore, this tool
+            can also be downloaded off <a href="https://github.com/dcartoon/s3-siggenerator">Github</a>.
+        </p>
+
+        <h2>How does it work?</h2>
+        <p>
+            The signature generation process requires four pieces of information:
+            <ul>
+                <li>The url(bucket/file) to be accessed</li>
+                <li>Expiration time(in seconds since the Unix epoch)[optional]</li>
+                <li>AWS Access Key ID</li>
+                <li>AWS Secret Access Key</li>
+           </ul>
+
+           This information is used to create a signed query string that can be 
+           used to download S3 files via the browser.            
+        </p>
+
+        <div class="box">
+            <h3>Inputs</h3>
+    
+            <form onsubmit="return false;">
+                <div class="inputHolder">
+                    <label for="urlToSign">Url to access(i.e. bucket/file.txt)</label>
+                    <input type="text" size="50" name="urlToSign"/>
+                </div>
+                <div class="inputHolder">
+                    <label for="expiresInSeconds">Number of seconds until the generated link expires[OPTIONAL]</label>
+                    <input type="text" size="50" name="expiresInSeconds"/>
+                </div>
+                <div class="inputHolder">
+                    <label for="secretAccessKey">AWS Secret Access Key</label>
+                    <input type="text" size="50" name="secretAccessKey"/>
+                </div>
+                <div id="inputErrorHolder">
+                </div>
+                <div class="inputHolder">
+                    <input type="submit" id="submit"/>
+                </div>
+            </form>
+        </div>
+
+        <div class="box">
+            <h3>Output</h3>
+            <div id="output">
+            </div>
+        </div>
+    </div>
+    <script src="http://code.jquery.com/jquery-latest.js"></script>
+    <script type="text/javascript">
+        $('form').submit(function () {
+            var url = $('input[name=urlToSign]').val();
+            var expires = $('input[name=expiresInSeconds]').val();
+            var secretKey = $('input[name=secretAccessKey]').val();
+
+            var inputErrorHolder = $('#inputErrorHolder');
+            inputErrorHolder.empty();
+
+            if(!url) {
+                inputErrorHolder.append('URL is required<br/>');
+                return false;
+            }
+            if(!secretKey) {
+                inputErrorHolder.append('Secret Key is required<br/>');
+                return false;
+            }
+
+            var expiresAt = 0;
+            if(expires) {
+                var secondsSinceEpoch = new Date().getTime() / 1000;
+                expiresAt = Math.floor(secondsSinceEpoch + parseInt(expires, 10));
+                $('#output').append('Expires at: ' + expiresAt + '<br />');
+            }
+
+            return false;
+        });
+    </script>
+</body>
+</html>
