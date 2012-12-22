@@ -28,26 +28,38 @@
             The signature generation process requires four pieces of information:
             <ul>
                 <li>The url(bucket/file) to be accessed</li>
-                <li>Expiration time(in seconds since the Unix epoch)[optional]</li>
+                <li>Expiration time(in seconds since the Unix epoch)</li>
                 <li>AWS Access Key ID</li>
                 <li>AWS Secret Access Key</li>
            </ul>
 
            This information is used to create a signed query string that can be 
-           used to download S3 files via the browser.            
+           used to download S3 files via the browser. Note that expiration is 
+           calculated relative to your computer's time, so if your clock is 
+           behind then your files will expire sooner than expected for everyone
+           else
         </p>
 
+        <p>
+            This tool draws from the S3 Signature Tester by 
+            <a href="https://forums.aws.amazon.com/profile.jspa?userID=14656">Chris@AWS</a>
+            available <a href="http://aws.amazon.com/code/199">here</a>.
+        </p>
         <div class="box">
             <h3>Inputs</h3>
     
             <form onsubmit="return false;">
                 <div class="inputHolder">
                     <label for="urlToSign">Url to access(i.e. bucket/file.txt)</label>
-                    <input type="text" size="50" name="urlToSign"/>
+                    <input type="text" size="50" name="urlToSign"/> 
                 </div>
                 <div class="inputHolder">
-                    <label for="expiresInSeconds">Number of seconds until the generated link expires[OPTIONAL]</label>
+                    <label for="expiresInSeconds">Number of seconds until the generated link expires</label>
                     <input type="text" size="50" name="expiresInSeconds"/>
+                </div>
+                <div class="inputHolder">
+                    <label for="accessKey">AWS Access Key</label>
+                    <input type="text" size="50" name="accessKey"/>
                 </div>
                 <div class="inputHolder">
                     <label for="secretAccessKey">AWS Secret Access Key</label>
@@ -68,11 +80,13 @@
         </div>
     </div>
     <script src="http://code.jquery.com/jquery-latest.js"></script>
+    <script src="js/siggenerator.js"></script>
     <script type="text/javascript">
         $('form').submit(function () {
-            var url = $('input[name=urlToSign]').val();
-            var expires = $('input[name=expiresInSeconds]').val();
-            var secretKey = $('input[name=secretAccessKey]').val();
+            var url =$.trim($('input[name=urlToSign]').val());
+            var ttl = $.trim($('input[name=expiresInSeconds]').val());
+            var accessKey = $.trim($('input[name=accessKey]').val());
+            var secretKey = $.trim($('input[name=secretAccessKey]').val());
 
             var inputErrorHolder = $('#inputErrorHolder');
             inputErrorHolder.empty();
@@ -81,17 +95,42 @@
                 inputErrorHolder.append('URL is required<br/>');
                 return false;
             }
+            if(!ttl) {
+                inputErrorHolder.append('Expires time is required<br/>');
+                return false;
+            }
+            if(!accessKey) {
+                inputErrorHolder.append('Access Key is required<br/>');
+                return false;
+            }
             if(!secretKey) {
                 inputErrorHolder.append('Secret Key is required<br/>');
                 return false;
             }
 
-            var expiresAt = 0;
-            if(expires) {
-                var secondsSinceEpoch = new Date().getTime() / 1000;
-                expiresAt = Math.floor(secondsSinceEpoch + parseInt(expires, 10));
-                $('#output').append('Expires at: ' + expiresAt + '<br />');
+            /* It's easy to forget the / prefix and it's also easy to fix */
+            if(url.charAt(0) != '/') {
+                url = '/' + url;
             }
+
+            var secondsSinceEpoch = new Date().getTime() / 1000;
+            var expiresAt = Math.floor(secondsSinceEpoch + parseInt(ttl, 10));
+
+            $('#output').empty();
+            $('#output').append('Expires at: ' + expiresAt + '<br />');
+
+            var canonicalString = generateCanonicalString(url, expiresAt,
+                secretKey);
+            $('#output').append('Canonical string: ' + canonicalString +
+                '<br />');
+
+            var signature = generateSignature(url, expiresAt, secretKey);
+            $('#output').append('Signature: ' + signature + '<br />');
+
+            var signedUrl = generateSignedUrl(url, expiresAt, accessKey,
+                signature);
+            $('#output').append('<a href="' + signedUrl +'">' + signedUrl + 
+                '</a>');
 
             return false;
         });
